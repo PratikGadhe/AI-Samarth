@@ -1,5 +1,5 @@
 {
-  "name": "Copy of AI Samarth",
+  "name": "AI Samarth",
   "description": "An accessibility assistant for users with speech and visual disabilities, powered by Gemini.",
   "requestFramePermissions": [
     "camera",

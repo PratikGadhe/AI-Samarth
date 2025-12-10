@@ -2,17 +2,22 @@ import { GoogleGenAI, Modality } from "@google/genai";
 
 const getClient = () => new GoogleGenAI({ apiKey: process.env.API_KEY });
 
-// Feature 1 & 2: Vision Analysis
+// Analysis for Signs (High Accuracy) or Surroundings (High Speed)
 export const analyzeImage = async (
   base64Image: string,
   prompt: string,
+  modelType: 'accuracy' | 'speed' = 'accuracy',
   systemInstruction: string = "You are a helpful assistant."
 ): Promise<string> => {
   try {
     const ai = getClient();
-    // Using gemini-3-pro-preview as requested for high quality vision
+    
+    // gemini-3-pro-preview for complex reasoning (Signs)
+    // gemini-2.5-flash for speed (Visual Assistance)
+    const modelName = modelType === 'accuracy' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
+      model: modelName,
       contents: {
         parts: [
           {
@@ -26,14 +31,14 @@ export const analyzeImage = async (
       },
       config: {
         systemInstruction: systemInstruction,
-        temperature: 0.4, // Lower temperature for more accurate descriptions
+        temperature: 0.4,
       }
     });
 
     return response.text || "I couldn't analyze the image.";
   } catch (error) {
     console.error("Vision Analysis Error:", error);
-    return "Sorry, I am having trouble seeing right now. Please try again.";
+    return "Sorry, connection issue. Please try again.";
   }
 };
 
@@ -41,7 +46,6 @@ export const analyzeImage = async (
 export const generateSpeech = async (text: string): Promise<string | null> => {
   try {
     const ai = getClient();
-    // Using gemini-2.5-flash-preview-tts for speech generation
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash-preview-tts',
       contents: {
@@ -51,7 +55,7 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
         responseModalities: [Modality.AUDIO],
         speechConfig: {
           voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: 'Kore' }, // Public speaking style voice
+            prebuiltVoiceConfig: { voiceName: 'Kore' },
           },
         },
       },
@@ -69,15 +73,16 @@ export const generateSpeech = async (text: string): Promise<string | null> => {
 export const generateSOSMessage = async (location: string, userNotes: string): Promise<string> => {
   try {
     const ai = getClient();
+    // Using Flash for instant SOS generation
     const response = await ai.models.generateContent({
-      model: 'gemini-3-pro-preview',
-      contents: `Generate a concise emergency SOS text message. 
-      User Location: ${location}. 
-      User Condition/Notes: ${userNotes}. 
-      Format: "Emergency! [Name needed] needs help. Location: [Location]. Context: [Context]."`,
+      model: 'gemini-2.5-flash',
+      contents: `Generate a concise, urgent SMS text message.
+      My Location: ${location}. 
+      Context: ${userNotes}. 
+      Requirement: Plain text, under 160 chars if possible. "SOS! [Name] needs help at [Location]. [Context]"`,
     });
-    return response.text || "Emergency! I need help.";
+    return response.text?.trim() || `SOS! I need help. Location: ${location}`;
   } catch (error) {
-    return `Emergency! I need help at ${location}. ${userNotes}`;
+    return `SOS! I need help at ${location}. ${userNotes}`;
   }
 }
